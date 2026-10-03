@@ -1,2 +1,0 @@
-# mind-blocks
-Puzzle game
