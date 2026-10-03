@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090d18">
+<title>Mind Blocks</title>
+<style>
+:root{--bg:#090d18;--cd:#131a30;--ln:#27325a;--tx:#eaf0ff;--mu:#8e9ac0;--a:#3de0ff;--b:#ff4f8b;--c:#ffc24a;--ok:#4be38a;--bad:#ff5a6a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 0,#17214a,var(--bg) 60%);color:var(--tx);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;border:0}
+#bg{position:fixed;inset:0;overflow:hidden;z-index:0}
+#bg i{position:absolute;border-radius:14px;opacity:.13;animation:fl linear infinite}
+@keyframes fl{from{transform:translateY(110vh) rotate(0)}to{transform:translateY(-20vh) rotate(360deg)}}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+/* telas */
+.scr{position:absolute;inset:0;z-index:1;display:none;flex-direction:column;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));overflow-y:auto;overflow-x:hidden}
+.scr.on{display:flex;animation:in .35s}
+@keyframes in{from{opacity:0;transform:translateY(12px)}}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+@keyframes pulse{50%{transform:scale(1.15);filter:brightness(1.7)}}
+@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+@keyframes star{from{transform:scale(0) rotate(-90deg)}}
+.btn{width:min(100%,340px);min-height:56px;border-radius:18px;font-weight:700;font-size:1.05rem;letter-spacing:.08em;background:linear-gradient(135deg,#202d5c,#18213f);border:1px solid var(--ln);box-shadow:0 6px 20px #0007;transition:transform .12s,border-color .2s}
+.btn:hover{border-color:var(--a)}.btn:active{transform:scale(.96)}
+.btn.p{background:linear-gradient(135deg,var(--a),#6a7bff);color:#06101f;border:0}
+.btn.sm{min-height:48px;width:auto;padding:0 22px}
+#home{justify-content:center}
+h1{margin:0;font:900 clamp(2.3rem,11vw,4.4rem)/1 "Arial Black",Impact,sans-serif;letter-spacing:.05em;text-align:center;background:linear-gradient(90deg,var(--a),var(--b),var(--c));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mu);margin:0 0 12px;letter-spacing:.18em;text-align:center}
+.stat{background:var(--cd);border:1px solid var(--ln);border-radius:18px;padding:12px 22px;text-align:center;color:var(--mu);margin-top:8px}
+.stat b{display:block;font-size:1.7rem;color:var(--c)}
+/* seleção de fases */
+.lg{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:min(100%,520px)}
+.lb{aspect-ratio:1;border-radius:16px;background:var(--cd);border:1px solid var(--ln);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.2rem;transition:transform .12s}
+.lb small{font-size:.62rem;color:var(--c)}.lb:active{transform:scale(.93)}
+.lb.lk{opacity:.4}.lb.cur{border-color:var(--a);box-shadow:0 0 16px #3de0ff55}
+/* jogo */
+#game{justify-content:center}
+.top,.info{display:flex;justify-content:space-between;align-items:center;width:min(100%,520px)}
+.ib{width:48px;height:48px;border-radius:14px;background:var(--cd);border:1px solid var(--ln);font-size:1.2rem}
+#lvl{font-weight:700;font-size:1.15rem}
+.info{font-size:.9rem;color:var(--mu)}.info b{color:var(--tx)}.low{color:var(--bad)!important}
+.pt{text-align:center;display:flex;flex-direction:column;gap:2px;max-width:480px}.pt small{color:var(--mu)}
+.board{width:min(94vw,480px);touch-action:none}
+.board.pop{animation:pop .35s}.board.shake{animation:shake .35s}
+.board.grid{display:grid;gap:6px}
+.tile{border-radius:12px;position:relative;transition:transform .15s}
+.tile.s{outline:3px solid #fff;transform:scale(.9)}
+.tile.ok::after{content:"";position:absolute;inset:0;margin:auto;width:20%;aspect-ratio:1;border-radius:50%;background:#fff8}
+.hint{animation:pulse .5s 3}
+.cell{background:#10162b;border:1px solid #1b2547;border-radius:8px;position:relative}
+.dot{position:absolute;inset:16%;border-radius:50%;box-shadow:0 0 12px #0008}
+.seqb{display:flex;flex-direction:column;gap:16px;align-items:center}
+.seqb small{color:var(--mu)}
+.sq,.os{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%}
+.sq div{min-width:46px;height:54px;padding:0 8px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#1b2447;border:1px solid var(--ln);font-size:1.4rem;font-weight:700}
+.sq .q{background:linear-gradient(135deg,var(--b),#a05bff);animation:pulse 1.2s infinite}
+.opt{flex:1 1 28%;min-height:62px;border-radius:16px;background:#1b2447;border:1px solid var(--ln);font-size:1.6rem;font-weight:700;transition:transform .12s}
+.opt:active{transform:scale(.94)}.opt.good{background:#14573a;border-color:var(--ok)}
+.opt.bad{background:#5a1f2e;opacity:.6}.opt.dis{opacity:.15;pointer-events:none}
+.mc{perspective:600px;cursor:pointer}
+.in{position:relative;width:100%;height:100%;transition:transform .35s;transform-style:preserve-3d}
+.mc.up .in{transform:rotateY(180deg)}
+.fa{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:clamp(1.2rem,6vw,2.2rem)}
+.bk{background:linear-gradient(135deg,#1c2650,#2c3a72);border:1px solid var(--ln);color:var(--mu)}
+.fr{background:#1b2447;transform:rotateY(180deg);border:1px solid var(--a)}
+.mc.m .fr{background:#3a3216;border-color:var(--c);box-shadow:0 0 18px #ffc24a88}
+/* janelas */
+.ov{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:#050810cc;backdrop-filter:blur(6px)}
+.ov.on{display:flex}
+.panel{background:var(--cd);border:1px solid var(--ln);border-radius:26px;padding:22px;width:min(92vw,380px);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;animation:pop .3s}
+.panel h2{margin:0;font-size:1.6rem}.panel p,.panel li{color:var(--mu);margin:0;font-size:.95rem;line-height:1.4}
+.panel ul{padding-left:18px;text-align:left;margin:0;display:flex;flex-direction:column;gap:6px}
+.stars{font-size:3rem;color:#2a3355;letter-spacing:6px}.stars span{display:inline-block;animation:star .5s backwards}.stars .on{color:var(--c);text-shadow:0 0 16px #ffc24a}
+.row{display:flex;justify-content:space-between;width:100%;color:var(--mu)}.row b{color:var(--tx)}
+.tg{width:100%;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;min-height:52px;background:#1b2447;border-radius:14px}
+.tg i{width:46px;height:26px;border-radius:13px;background:#2a3355;position:relative;transition:.2s}
+.tg i::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.tg.on i{background:var(--ok)}.tg.on i::after{left:23px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;border:1px solid var(--ln);padding:10px 16px;border-radius:14px;z-index:60;display:none;max-width:90vw;text-align:center}
+.noanim *{animation:none!important;transition:none!important}
+</style>
+</head>
+<body>
+<div id="bg"></div><canvas id="fx"></canvas><div id="toast"></div>
+
+<!-- TELA INICIAL -->
+<section class="scr" id="home">
+  <h1>MIND BLOCKS</h1><p class="sub">Desafie sua mente</p>
+  <button class="btn p" data-a="play">JOGAR</button>
+  <button class="btn" data-a="how">COMO JOGAR</button>
+  <button class="btn" data-a="set">CONFIGURAÇÕES</button>
+  <div class="stat">Melhor pontuação<b id="best">0</b><span id="hs"></span></div>
+</section>
+
+<!-- SELEÇÃO DE FASES -->
+<section class="scr" id="lv">
+  <div class="top"><button class="ib" data-a="menu">←</button><b id="prog"></b><span style="width:48px"></span></div>
+  <div class="lg" id="lg"></div>
+</section>
+
+<!-- JOGO -->
+<section class="scr" id="game">
+  <div class="top"><button class="ib" data-a="pause">⏸</button><div id="lvl">Fase 1/30</div><div id="lives"></div></div>
+  <div class="info"><span>⏱ <b id="tm">0:00</b></span><span>👣 <b id="mv">0</b></span><span>★ <b id="stt">0</b></span><span>Pontos <b id="pts">0</b></span></div>
+  <div class="pt"><b id="ptitle"></b><small id="ptip"></small></div>
+  <div id="board" class="board"></div>
+  <button class="btn sm" data-a="hint">💡 DICA (<span id="hn">3</span>)</button>
+</section>
+
+<!-- JANELAS -->
+<div class="ov" id="how"><div class="panel"><h2>Como jogar</h2><ul>
+<li><b>Organize os blocos:</b> troque blocos (toque em dois ou arraste) até cada linha ter uma cor.</li>
+<li><b>Conecte os pontos:</b> arraste de um ponto ao outro da mesma cor sem cruzar linhas.</li>
+<li><b>Sequência lógica:</b> escolha o elemento que continua a sequência.</li>
+<li><b>Memória:</b> vire cartas e encontre todos os pares.</li>
+<li>Você tem 3 vidas por fase. Erros custam vidas e pontos.</li>
+<li>Rapidez e poucos movimentos dão mais pontos e até 3 estrelas.</li>
+<li>A dica ajuda sem dar a resposta. Ganhe mais dicas avançando.</li>
+<li>Fases 17+ têm limite de tempo e movimentos.</li></ul>
+<button class="btn p" data-a="chow">ENTENDI</button></div></div>
+
+<div class="ov" id="pause"><div class="panel"><h2>Pausado</h2>
+<button class="btn p" data-a="resume">CONTINUAR</button><button class="btn" data-a="again">REINICIAR FASE</button>
+<button class="btn" data-a="set">CONFIGURAÇÕES</button><button class="btn" data-a="menu">VOLTAR AO MENU</button></div></div>
+
+<div class="ov" id="set"><div class="panel"><h2>Configurações</h2><div id="sl" style="width:100%;display:flex;flex-direction:column;gap:8px"></div>
+<button class="btn p" data-a="cset">FECHAR</button></div></div>
+
+<div class="ov" id="win"><div class="panel"><h2>FASE CONCLUÍDA!</h2><div class="stars" id="ws"></div>
+<div class="row">Pontuação<b id="wsc"></b></div><div class="row">Tempo<b id="wt"></b></div><div class="row">Movimentos<b id="wm"></b></div>
+<p id="wx"></p><button class="btn p" data-a="next" id="wn">PRÓXIMA FASE</button><button class="btn" data-a="again">REPETIR</button></div></div>
+
+<div class="ov" id="over"><div class="panel"><h2>GAME OVER</h2><p id="om"></p>
+<button class="btn p" data-a="again">TENTAR DE NOVO</button><button class="btn" data-a="menu">VOLTAR AO MENU</button></div></div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const rnd=n=>Math.floor(Math.random()*n);
+const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const COL=['#ff4f6d','#3de0ff','#ffc24a','#4be38a','#a78bfa','#ff8a3d'];
+const TOTAL=30,TY=['sort','seq','mem','dots'];
+const BASE={sort:100,dots:100,seq:70,mem:80};
+const NAME={sort:'Organize os blocos',dots:'Conecte os pontos',seq:'Sequência lógica',mem:'Memória'};
+const TIP={sort:'Toque em dois blocos (ou arraste um sobre outro) para trocá-los. Cada linha deve ter uma cor.',dots:'Arraste de um ponto até o outro da mesma cor, sem cruzar linhas.',seq:'Qual elemento continua a sequência?',mem:'Vire as cartas e encontre todos os pares.'};
+
+/* ---------- Salvamento (localStorage) ---------- */
+const KEY='mindblocks_v1';
+let S={un:1,lv:{},hints:3,set:{snd:1,mus:1,ani:1,vib:1}};
+try{const r=JSON.parse(localStorage.getItem(KEY));if(r&&typeof r==='object'){S=Object.assign(S,r);S.set=Object.assign({snd:1,mus:1,ani:1,vib:1},r.set)}}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const total=()=>Object.values(S.lv).reduce((a,v)=>a+v.s,0);
+const stars=()=>Object.values(S.lv).reduce((a,v)=>a+v.st,0);
+const fmt=s=>Math.floor(s/60)+':'+String(Math.max(0,s)%60).padStart(2,'0');
+
+/* ---------- Áudio e vibração ---------- */
+let AC;
+const ac=()=>{if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}if(AC&&AC.state==='suspended')AC.resume();return AC};
+const tone=(f,t,d,v,ty)=>{const a=ac();if(!a)return;const o=a.createOscillator(),g=a.createGain(),T=a.currentTime+t;o.type=ty||'sine';o.frequency.value=f;g.gain.setValueAtTime(v,T);g.gain.exponentialRampToValueAtTime(.001,T+d);o.connect(g);g.connect(a.destination);o.start(T);o.stop(T+d)};
+const SF={click:[[520,0,.07]],ok:[[660,0,.1],[880,.08,.15]],bad:[[160,0,.25,'sawtooth']],win:[[523,0,.15],[659,.12,.15],[784,.24,.15],[1047,.36,.3]],lose:[[300,0,.2],[220,.18,.2],[150,.36,.4]]};
+const sfx=k=>{if(S.set.snd)SF[k].forEach(n=>tone(n[0],n[1],n[2],.08,n[3]))};
+const vib=p=>{if(S.set.vib&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}};
+let mt,mi=0;const NOTES=[262,330,392,494,392,330,294,370,440,523,440,370];
+function music(){clearTimeout(mt);if(!S.set.mus||!ac())return;const step=()=>{if(!S.set.mus)return;tone(NOTES[mi++%NOTES.length]/2,0,.5,.03,'triangle');mt=setTimeout(step,420)};step()}
+
+/* ---------- Partículas ---------- */
+const cv=$('#fx'),cx=cv.getContext('2d');let P=[],raf=0;
+function burst(x,y,c,n){if(!S.set.ani)return;for(let i=0;i<(n||18);i++){const a=Math.random()*6.28,s=1+Math.random()*4;P.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:1,c})}if(!raf)raf=requestAnimationFrame(loop)}
+function loop(){cx.clearRect(0,0,cv.width,cv.height);P=P.filter(p=>p.l>0);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.08;p.l-=.02;cx.globalAlpha=Math.max(p.l,0);cx.fillStyle=p.c;cx.fillRect(p.x,p.y,4,4)});raf=P.length?requestAnimationFrame(loop):0}
+const burstEl=(el,c,n)=>{const r=el.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,c,n)};
+
+/* ---------- Utilidades de interface ---------- */
+const show=id=>$$('.scr').forEach(s=>s.classList.toggle('on',s.id===id));
+const ov=(id,on)=>$('#'+id).classList.toggle('on',on!==0);
+let tt;const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',2000)};
+const apply=()=>document.body.classList.toggle('noanim',!S.set.ani);
+
+/* ---------- Estado do jogo ---------- */
+let G=null,tick=0;
+const busy=()=>!G||G.pa||G.end||G.lock;
+const later=(f,ms)=>{const g=G;setTimeout(()=>{if(G===g&&!g.end)f()},ms)};
+
+// Configuração de cada fase: 1-16 simples/intermediárias; 17+ com limites; 25+ combinam 2 desafios
+function cfg(n){
+  const k=Math.ceil(n/4),t0=TY[(n-1)%4],st=n>=25?[t0,TY[(n+1)%4]]:[t0],d=n>=25?Math.max(1,k-2):k;
+  const sum=st.reduce((a,t)=>a+BASE[t],0);
+  return{st,d,lim:n>=17,tl:n>=17?Math.round(sum*(1.4-(n-17)*.03)):0,par:Math.round(sum*.4*(.7+.1*d))};
+}
+function startLevel(n){
+  clearInterval(tick);['pause','win','over','set'].forEach(i=>ov(i,0));
+  G={n,c:cfg(n),si:0,t:0,mv:0,er:0,lv:3,ml:0,pa:false,end:false,lock:false};
+  $('#lvl').textContent='Fase '+n+'/'+TOTAL;show('game');runStage();
+  tick=setInterval(()=>{if(G&&!G.pa&&!G.end){G.t++;if(G.c.tl&&G.t>=G.c.tl)fail('Tempo esgotado!');hud()}},1000);
+}
+function runStage(){
+  const ty=G.c.st[G.si],b=$('#board');G.lock=false;
+  b.className='board';b.style.cssText='';b.innerHTML='';b.onpointerdown=b.onpointermove=null;window.onpointerup=null;delete b.dataset.c;
+  $('#ptitle').textContent=NAME[ty]+(G.c.st.length>1?' ('+(G.si+1)+'/'+G.c.st.length+')':'');$('#ptip').textContent=TIP[ty];
+  const lim=PZ[ty].init(b,G.c.d);if(G.c.lim&&lim)G.ml+=lim;
+  fit();hud();void b.offsetWidth;b.classList.add('pop');setTimeout(()=>b.classList.remove('pop'),400);
+}
+function fit(){
+  const b=$('#board');if(!b.classList.contains('grid'))return;
+  const c=+b.dataset.c,r=+b.dataset.r,w=Math.min(innerWidth*.94,480,(innerHeight-250)*c/r);
+  b.style.width=w+'px';b.style.height=(w*r/c)+'px';
+}
+function hud(){
+  if(!G)return;
+  $('#lives').textContent='❤'.repeat(G.lv)+'🖤'.repeat(3-G.lv);
+  const left=G.c.tl?G.c.tl-G.t:G.t,tm=$('#tm');tm.textContent=fmt(left);tm.classList.toggle('low',!!G.c.tl&&left<=10);
+  $('#mv').textContent=G.ml?G.mv+'/'+G.ml:G.mv;$('#pts').textContent=total();$('#stt').textContent=stars();$('#hn').textContent=S.hints;
+}
+// Chamados pelos puzzles
+function move(){G.mv++;hud();if(G.ml&&G.mv>G.ml&&!G.end){fail('Limite de movimentos atingido!');return false}return true}
+function err(life){
+  G.er++;sfx('bad');vib(120);const b=$('#board');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');
+  if(life)G.lv--;hud();if(life&&G.lv<=0)fail('Suas vidas acabaram.');
+}
+function solved(){
+  if(G.end)return;G.lock=true;sfx('ok');
+  if(G.si<G.c.st.length-1){G.si++;toast('Próximo desafio!');later(runStage,700)}else later(win,600);
+}
+function fail(m){if(!G||G.end)return;G.end=true;sfx('lose');vib([200,80,200]);$('#om').textContent=m;ov('over')}
+function win(){
+  if(G.end)return;G.end=true;const c=G.c,n=G.n;
+  // Pontuação: fase + bônus de tempo - erros - movimentos + vidas restantes
+  const sc=Math.max(100,Math.round(400+n*40+Math.max(0,c.par*2-G.t)*8-G.er*80-G.mv*2+G.lv*60));
+  const st=G.er===0&&G.t<=c.par*1.6?3:G.er<=2&&G.t<=c.par*3?2:1;
+  const old=S.lv[n],rec=!!old&&sc>old.s;
+  S.lv[n]={s:Math.max(sc,old?old.s:0),st:Math.max(st,old?old.st:0)};
+  let extra='';if(!old&&n%3===0){S.hints++;extra='+1 dica conquistada!'}
+  if(rec)extra='NOVO RECORDE! '+extra;if(n===TOTAL)extra+=' Você completou todas as fases!';
+  S.un=Math.max(S.un,Math.min(TOTAL,n+1));save();hud();
+  $('#ws').innerHTML=[1,2,3].map(i=>'<span class="'+(i<=st?'on':'')+'" style="animation-delay:'+i*.25+'s">★</span>').join('');
+  $('#wsc').textContent=sc;$('#wt').textContent=fmt(G.t);$('#wm').textContent=G.mv;$('#wx').textContent=extra;
+  $('#wn').textContent=n<TOTAL?'PRÓXIMA FASE':'VER FASES';ov('win');sfx('win');vib([60,40,60]);
+  for(let i=0;i<6;i++)setTimeout(()=>burst(innerWidth*(.2+Math.random()*.6),innerHeight*.3,COL[i],26),i*150);
+}
+
+/* ---------- Puzzles ---------- */
+const PZ={};
+const nb=(i,n)=>{const x=i%n,y=(i-x)/n,r=[];if(x>0)r.push(i-1);if(x<n-1)r.push(i+1);if(y>0)r.push(i-n);if(y<n-1)r.push(i+n);return r};
+
+/* 1) Organizar os blocos: cada linha deve ter uma cor */
+PZ.sort={
+  init(b,d){
+    const n=Math.min(5,2+Math.ceil(d/2)),N=n*n,goal=Array.from({length:N},(_,i)=>Math.floor(i/n));let t;
+    do{t=goal.slice();for(let i=0;i<N+2*d;i++){const x=rnd(N),y=rnd(N);[t[x],t[y]]=[t[y],t[x]]}}while(t.every((v,i)=>v===goal[i]));
+    Object.assign(this,{t,goal,sel:-1,from:null,els:[]});
+    b.classList.add('grid');b.dataset.c=b.dataset.r=n;b.style.gridTemplateColumns='repeat('+n+',1fr)';
+    t.forEach((v,i)=>{const e=document.createElement('div');e.className='tile';e.dataset.i=i;b.appendChild(e);this.els.push(e)});
+    this.mark();
+    b.onpointerdown=e=>{const el=e.target.closest('.tile');if(el&&!busy()){this.from=+el.dataset.i;ac()}};
+    window.onpointerup=e=>{
+      const f=this.from;this.from=null;if(f===null||busy())return;
+      const el=document.elementFromPoint(e.clientX,e.clientY),to=el&&el.closest&&el.closest('.tile');
+      if(!to||!b.contains(to))return;const j=+to.dataset.i;
+      if(j!==f)this.swap(f,j);
+      else if(this.sel<0){this.sel=f;this.mark();sfx('click')}
+      else if(this.sel===f){this.sel=-1;this.mark()}
+      else this.swap(this.sel,f);
+    };
+    return N+Math.ceil(N/2);
+  },
+  mark(){this.els.forEach((e,i)=>{e.style.background=COL[this.t[i]];e.classList.toggle('s',i===this.sel);e.classList.toggle('ok',this.t[i]===this.goal[i])})},
+  swap(i,j){
+    [this.t[i],this.t[j]]=[this.t[j],this.t[i]];this.sel=-1;this.mark();sfx('click');vib(15);
+    if(!move())return;if(this.t.every((v,k)=>v===this.goal[k])){this.els.forEach(e=>burstEl(e,'#fff',3));solved()}
+  },
+  hint(){const w=this.t.map((v,i)=>i).filter(i=>this.t[i]!==this.goal[i]);if(!w.length)return;const e=this.els[w[rnd(w.length)]];e.classList.add('hint');setTimeout(()=>e.classList.remove('hint'),1600)}
+};
+
+/* 2) Conectar os pontos (cada fase é gerada já resolvível) */
+function genDots(n,np){
+  for(let tr=0;tr<300;tr++){
+    const own=Array(n*n).fill(-1),pairs=[];let ok=true;
+    for(let c=0;c<np&&ok;c++){
+      let path=null;
+      for(let a=0;a<40&&!path;a++){
+        const s=rnd(n*n);if(own[s]>=0)continue;
+        const p=[s],L=3+rnd(n-1);own[s]=c;
+        while(p.length<L){const f=nb(p[p.length-1],n).filter(x=>own[x]<0);if(!f.length)break;const x=f[rnd(f.length)];own[x]=c;p.push(x)}
+        if(p.length>=3)path=p;else p.forEach(x=>own[x]=-1);
+      }
+      if(path)pairs.push([path[0],path[path.length-1]]);else ok=false;
+    }
+    if(ok)return pairs;
+  }
+  return Array.from({length:np},(_,c)=>[c*n,c*n+n-1]);
+}
+PZ.dots={
+  init(b,d){
+    const n=Math.min(6,3+Math.ceil(d/2)),np=Math.min(5,2+Math.floor(d/2)),pr=genDots(n,np);
+    const dc=Array(n*n).fill(-1),own=Array(n*n).fill(-1),paths=pr.map(()=>[]);
+    pr.forEach((p,c)=>{dc[p[0]]=c;dc[p[1]]=c});
+    Object.assign(this,{n,dc,own,paths,cur:null,cr:false,cells:[]});
+    b.classList.add('grid');b.dataset.c=b.dataset.r=n;b.style.gridTemplateColumns='repeat('+n+',1fr)';
+    for(let i=0;i<n*n;i++){const e=document.createElement('div');e.className='cell';e.dataset.i=i;b.appendChild(e);this.cells.push(e)}
+    this.draw();
+    const at=e=>{const el=document.elementFromPoint(e.clientX,e.clientY),c=el&&el.closest&&el.closest('.cell');return c&&b.contains(c)?+c.dataset.i:-1};
+    b.onpointerdown=e=>{
+      if(busy())return;ac();const i=at(e);if(i<0)return;const c=dc[i]>=0?dc[i]:own[i];if(c<0)return;
+      if(dc[i]>=0){this.clr(c);paths[c]=[i];own[i]=c}else this.cut(c,paths[c].indexOf(i)+1);
+      this.cur=c;this.cr=false;sfx('click');this.draw();
+    };
+    b.onpointermove=e=>{
+      const c=this.cur;if(c===null||busy())return;const j=at(e);if(j<0)return;
+      const p=paths[c],l=p[p.length-1];if(j===l||!nb(l,n).includes(j))return;
+      const k=p.indexOf(j);if(k>=0){this.cut(c,k+1);this.draw();return}   // voltar atrás
+      if(dc[l]===c&&p.length>1)return;                                      // caminho já completo
+      if((own[j]>=0&&own[j]!==c)||(dc[j]>=0&&dc[j]!==c)){if(!this.cr){this.cr=true;err(true)}return} // cruzamento
+      p.push(j);own[j]=c;if(dc[j]===c){sfx('ok');vib(30);burstEl(this.cells[j],COL[c],12)}this.draw();
+    };
+    window.onpointerup=()=>{
+      const c=this.cur;if(c===null)return;this.cur=null;if(busy())return;
+      if(paths[c].length>1&&move()&&paths.every((p,k)=>p.length>1&&dc[p[p.length-1]]===k))solved();
+    };
+    return 0;
+  },
+  clr(c){this.paths[c].forEach(x=>this.own[x]=-1);this.paths[c]=[]},
+  cut(c,len){this.paths[c].slice(len).forEach(x=>this.own[x]=-1);this.paths[c]=this.paths[c].slice(0,len)},
+  draw(){this.cells.forEach((e,i)=>{const o=this.own[i],d=this.dc[i];e.style.background=o>=0?COL[o]+'66':'';e.innerHTML=d>=0?'<div class="dot" style="background:'+COL[d]+'"></div>':''})},
+  hint(){
+    const ids=this.paths.map((p,k)=>k).filter(k=>{const p=this.paths[k];return !(p.length>1&&this.dc[p[p.length-1]]===k)});
+    if(!ids.length)return;const c=ids[rnd(ids.length)];
+    this.cells.forEach((e,i)=>{if(this.dc[i]===c&&e.firstChild){const d=e.firstChild;d.classList.add('hint');setTimeout(()=>d.classList.remove('hint'),1600)}});
+  }
+};
+
+/* 3) Sequência lógica */
+const SYMS=['▲','●','■','◆','★','✚'],A=(n,f)=>Array.from({length:n},(_,i)=>f(i));
+// Cada gerador devolve a sequência; o último item é a resposta
+const GEN=[
+  ()=>{const s=1+rnd(6),k=2+rnd(4);return A(6,i=>s+k*i)},
+  ()=>{const p=2+rnd(2),bs=shuf(SYMS.slice()).slice(0,p);return A(p*2+2,i=>bs[i%p])},
+  ()=>{const s=1+rnd(3),r=2+rnd(2);return A(6,i=>s*Math.pow(r,i))},
+  ()=>{let v=rnd(4);return A(6,i=>i?(v+=i):v)},
+  ()=>{const q=[1+rnd(3),1+rnd(3)];while(q.length<6)q.push(q[q.length-1]+q[q.length-2]);return q},
+  ()=>{const c=rnd(5);return A(6,i=>(i+1)*(i+1)+c)},
+  ()=>{const s=1+rnd(5),k=2+rnd(3),t=20+rnd(10),m=1+rnd(3);return A(7,i=>i%2?t-m*((i-1)/2):s+k*(i/2))}
+];
+PZ.seq={
+  init(b,d){Object.assign(this,{d,b,R:Math.min(5,2+Math.ceil(d/2)),r:0});b.classList.add('seqb');this.next();return this.R+4},
+  next(){
+    const d=this.d,q=GEN[rnd(Math.min(GEN.length,d+1))](),ans=q[q.length-1],cnt=d<=2?3:d<=5?4:5;
+    let pool=typeof ans==='number'?[ans+1,ans-1,ans+2,ans-2,ans+3,ans-3,ans*2,ans+10]:SYMS.slice();
+    pool=[...new Set(pool)].filter(v=>v!==ans&&(typeof v!=='number'||v>0));
+    const ops=shuf(shuf(pool).slice(0,cnt-1).concat([ans]));this.ans=ans;this.ops=[];
+    this.b.innerHTML='<small>Pergunta '+(this.r+1)+'/'+this.R+'</small><div class="sq">'+q.slice(0,-1).map(v=>'<div>'+v+'</div>').join('')+'<div class="q">?</div></div><div class="os"></div>';
+    const os=this.b.querySelector('.os');
+    ops.forEach(v=>{const o=document.createElement('button');o.className='opt';o.textContent=v;o.onclick=()=>this.pick(o,v);os.appendChild(o);this.ops.push([o,v])});
+  },
+  pick(o,v){
+    if(busy()||o.disabled)return;
+    if(v===this.ans){
+      o.classList.add('good');burstEl(o,'#4be38a');sfx('ok');vib(30);if(!move())return;
+      if(++this.r>=this.R)solved();else{G.lock=true;later(()=>{G.lock=false;this.next()},650)}
+    }else{o.classList.add('bad');o.disabled=true;if(move())err(true)}
+  },
+  hint(){const w=this.ops.filter(([o,v])=>v!==this.ans&&!o.disabled&&!o.classList.contains('dis'));if(w.length>1)w[rnd(w.length)][0].classList.add('dis')}
+};
+
+/* 4) Memória */
+PZ.mem={
+  init(b,d){
+    const np=[3,4,6,6,8,8,10,10][Math.min(d,8)-1],cols={6:3,8:4,12:4,16:4,20:5}[np*2];
+    const EM=['🔷','🔶','⭐','🌙','🔥','💎','🍀','⚡','🎯','🚀'],cs=shuf(EM.slice(0,np).concat(EM.slice(0,np)));
+    Object.assign(this,{np,cs,open:[],found:0,seen:new Set(),els:[]});
+    b.classList.add('grid');b.dataset.c=cols;b.dataset.r=np*2/cols;b.style.gridTemplateColumns='repeat('+cols+',1fr)';
+    cs.forEach((s,i)=>{const e=document.createElement('div');e.className='mc';e.innerHTML='<div class="in"><div class="fa bk">?</div><div class="fa fr">'+s+'</div></div>';e.onclick=()=>this.flip(i);b.appendChild(e);this.els.push(e)});
+    return np*3+2;
+  },
+  flip(i){
+    const e=this.els[i];if(busy()||this.open.length>=2||e.classList.contains('up')||e.classList.contains('m'))return;
+    ac();e.classList.add('up');sfx('click');this.open.push(i);if(this.open.length<2)return;
+    const [a,c]=this.open;if(!move())return;
+    if(this.cs[a]===this.cs[c]){
+      later(()=>{[a,c].forEach(k=>{this.els[k].classList.add('m');burstEl(this.els[k],'#ffc24a',14)});sfx('ok');vib(40);this.open=[];if(++this.found===this.np)solved()},400);
+    }else{
+      // só conta erro se ambas as cartas já tinham sido vistas antes
+      if(this.seen.has(a)&&this.seen.has(c))err(false);
+      this.seen.add(a);this.seen.add(c);
+      later(()=>{this.els[a].classList.remove('up');this.els[c].classList.remove('up');this.open=[]},800);
+    }
+  },
+  hint(){ // revela uma carta por 1 segundo
+    const c=this.els.map((e,i)=>i).filter(i=>!this.els[i].classList.contains('up')&&!this.els[i].classList.contains('m'));
+    if(!c.length)return;const e=this.els[c[rnd(c.length)]];e.classList.add('up');later(()=>e.classList.remove('up'),1000);
+  }
+};
+
+/* ---------- Menus e ações ---------- */
+function home(){$('#best').textContent=total();$('#hs').textContent='★ '+stars()+'/'+TOTAL*3}
+function buildLv(){
+  const g=$('#lg');g.innerHTML='';
+  for(let n=1;n<=TOTAL;n++){
+    const lk=n>S.un,st=S.lv[n]?S.lv[n].st:0,b=document.createElement('button');
+    b.className='lb'+(lk?' lk':'')+(n===S.un?' cur':'');
+    b.innerHTML='<b>'+(lk?'🔒':n)+'</b><small>'+'★'.repeat(st)+'☆'.repeat(3-st)+'</small>';
+    b.onclick=()=>{if(lk){sfx('bad');toast('Conclua a fase anterior para desbloquear');return}startLevel(n)};
+    g.appendChild(b);
+  }
+  $('#prog').textContent='Fase '+Math.min(S.un,TOTAL)+'/'+TOTAL+'  ★ '+stars();
+}
+const SET=[['snd','Som'],['mus','Música'],['ani','Animações'],['vib','Vibração']];
+function buildSet(){
+  const c=$('#sl');c.innerHTML='';
+  SET.forEach(([k,l])=>{
+    const r=document.createElement('button');r.className='tg'+(S.set[k]?' on':'');
+    r.innerHTML='<span>'+l+(k==='vib'&&!navigator.vibrate?' (indisponível)':'')+'</span><i></i>';
+    r.onclick=()=>{S.set[k]=S.set[k]?0:1;save();apply();buildSet();if(k==='mus')music();sfx('click');if(k==='vib')vib(40)};
+    c.appendChild(r);
+  });
+}
+function toMenu(){clearInterval(tick);G=null;['pause','win','over','set'].forEach(i=>ov(i,0));show('home');home()}
+const ACT={
+  play(){buildLv();show('lv')},how(){ov('how')},chow(){ov('how',0)},set(){buildSet();ov('set')},cset(){ov('set',0)},
+  menu:toMenu,pause(){if(busy())return;G.pa=true;ov('pause')},resume(){G.pa=false;ov('pause',0)},
+  again(){startLevel(G.n)},
+  next(){if(G.n<TOTAL)startLevel(G.n+1);else{ov('win',0);G=null;clearInterval(tick);buildLv();show('lv')}},
+  hint(){
+    if(busy())return;if(S.hints<1){toast('Sem dicas! Conclua fases para ganhar mais.');return}
+    S.hints--;save();hud();PZ[G.c.st[G.si]].hint();
+  }
+};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b&&ACT[b.dataset.a]){ac();sfx('click');ACT[b.dataset.a]()}});
+document.addEventListener('pointerdown',()=>{ac();music()},{once:true});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&G&&!G.end&&!G.pa&&$('#game').classList.contains('on'))ACT.pause()});
+addEventListener('resize',()=>{cv.width=innerWidth;cv.height=innerHeight;fit()});
+cv.width=innerWidth;cv.height=innerHeight;
+
+/* ---------- Início ---------- */
+for(let i=0;i<14;i++){const e=document.createElement('i'),s=20+rnd(50);e.style.cssText='left:'+rnd(100)+'%;width:'+s+'px;height:'+s+'px;background:'+COL[i%6]+';animation-duration:'+(14+rnd(16))+'s;animation-delay:-'+rnd(20)+'s';$('#bg').appendChild(e)}
+apply();home();show('home');
+})();
+</script>
+</body>
+</html>
